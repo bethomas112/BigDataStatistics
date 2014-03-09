@@ -13,10 +13,17 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <vector>
 
 //#include <mpi.h>
 
 using namespace std;
+
+class KeyValue {
+public:
+   const char *key;
+   unsigned value;
+};
 
 /* Returns true if string is all alphabetical*/
 bool IsAlpha(char *toCheck) {
@@ -35,6 +42,8 @@ bool IsAlpha(char *toCheck) {
 map<string, int> countWords(FILE *fp, int fileSize) {
    map<string, int> words;
    char *fileData = (char *)malloc(fileSize);
+   char *last , *secondLast;
+   long t =0;
    string temp;
    if (!fileData) {
       perror("Malloc");
@@ -43,6 +52,7 @@ map<string, int> countWords(FILE *fp, int fileSize) {
    
    fread(fileData, sizeof(char),fileSize, fp);
    char *pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
+   last = pch;
    while (pch) {
       if (IsAlpha(pch)) {
          words[string(pch)]++;
@@ -74,8 +84,15 @@ int main(int argc, char **argv) {
       exit(1);
    }
    
+   vector<KeyValue> pairs();
+  // KeyValue k;
+  // k.key = "key";
+  // k.value = 5;
+   
    for (map<string, int>::iterator it=words.begin(); it!=words.end(); it++){
-      fprintf(outfile, "%s, %d\n", it->first.c_str(), it->second);  
+      KeyValue k = {it->first.c_str(), it->second};
+      pairs.insert(pairs.end(), k);
+      fprintf(outfile, "%s, %d\n", k.key, k.value);  
    }
    
    fclose(outfile);
