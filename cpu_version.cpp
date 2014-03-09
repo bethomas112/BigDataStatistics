@@ -4,11 +4,15 @@
 #include <string.h>
 
 //c++ includes
-/*
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
 #include <thrust/device_vector.h>
-#include <thrust/host_vector.h>*/
+#include <thrust/tabulate.h>
+#include <thrust/random.h>
+#include <thrust/transform.h>
+#include <thrust/transform_scan.h>
+#include <thrust/sort.h>
+#include <thrust/reduce.h>
+#include <thrust/binary_search.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <cmath>
 #include <map>
 #include <string>
@@ -84,15 +88,20 @@ int main(int argc, char **argv) {
       exit(1);
    }
    
-   vector<KeyValue> pairs();
-  // KeyValue k;
-  // k.key = "key";
-  // k.value = 5;
-   
+   vector<const char *> keys;
+   vector<int> values;
+  
    for (map<string, int>::iterator it=words.begin(); it!=words.end(); it++){
-      KeyValue k = {it->first.c_str(), it->second};
-      pairs.insert(pairs.end(), k);
-      fprintf(outfile, "%s, %d\n", k.key, k.value);  
+      keys.insert(keys.end(), it->first.c_str());
+      values.insert(values.end(), it->second);
+   }
+
+   thrust::sort_by_key(values.begin(), values.end(), keys.begin(), thrust::greater<int>());
+
+   vector<int>::iterator itVal = values.begin();
+
+   for (vector<const char *>::iterator it = keys.begin(); it!=keys.end(); it++, itVal++) {
+      fprintf(outfile, "%s, %d\n", *it, *itVal);
    }
    
    fclose(outfile);
