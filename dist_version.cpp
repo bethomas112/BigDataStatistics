@@ -36,21 +36,22 @@ bool IsAlpha(char *toCheck) {
 }
 
 map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
-   map<string, int> words;
-   
-   int size = fileSize/commSize;
+   map<string, int> words; 
+   char *pch;
+   int size = fileSize/commSize + 4;
 
    lseek(fd, size * commRank, SEEK_SET);
 
-   fileSize = commRank == commSize ? size + commSize : size;
-   char *fileData = (char *)malloc(fileSize);
+   //fileSize = commRank == commSize - 1 ? size + commSize : size;
+   char *fileData = (char *)malloc(size);
    if (!fileData) {
       perror("Malloc");
       exit(1);
    }
-   read(fd, fileData, fileSize);
+   
+   read(fd, fileData, size);
 
-   char *pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
+   pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
    while (pch) {
       if (IsAlpha(pch)) {
          words[string(pch)]++;
@@ -125,9 +126,9 @@ int main(int argc, char **argv) {
    }
    int fileSize = lseek(fd, 0, SEEK_END);
 
-  // lseek(fd, 0, SEEK_SET);
-
+   cout << "Before CountWords, CommRank: " << commRank << "\n";
    words = countWords(fd, fileSize, commRank, commSize);
+   cout << "After Countwords, CommRank: " << commRank << "\n";
 
    if (commRank) {
       mpiPrint(commRank, words);
