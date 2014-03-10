@@ -46,8 +46,6 @@ bool IsAlpha(char *toCheck) {
 map<string, int> countWords(FILE *fp, int fileSize) {
    map<string, int> words;
    char *fileData = (char *)malloc(fileSize);
-   char *last , *secondLast;
-   long t =0;
    string temp;
    if (!fileData) {
       perror("Malloc");
@@ -87,24 +85,26 @@ int main(int argc, char **argv) {
       perror("fopen");
       exit(1);
    }
-   :.//
-   thrust::device_vector<const char *> keys(words.size());
-   thrust::device_vector<int> values(words.size());
-   int i= 0;
+   thrust::host_vector<const char *> keys;
+   thrust::host_vector<int> values;
   
-   for (map<string, int>::iterator it = words.begin(); it!=words.end(); it++, i++){
-      keys[i] = it->first.c_str();
-      values[i] = it->second;
+   for (map<string, int>::iterator it = words.begin(); it!=words.end(); 
+    it++){
+      keys.push_back(it->first.c_str());
+      values.push_back(it->second);
    }
+   
+   thrust::device_vector<const char *> d_keys(keys.size()) = keys;
+   thrust::device_vector<int> d_values(keys.size()) = values;
+   
+   /*thrust::sort_by_key(d_values.begin(), d_values.end(), d_keys.begin(), thrust::greater<int>());*/
 
-   //thrust::sort_by_key(values.begin(), values.end(), keys.begin(), thrust::greater<int>());
+   /*thrust::host_vector<const char *> k = keys;
+   thrust::host_vector<int> v = values;*/
 
-   thrust::host_vector<const char *> k = keys;
-   thrust::host_vector<int> v = values;   
-
-   for (int j = 0; j < i; j++) {
+   /*for (int j = 0; j < i; j++) {
       fprintf(outfile, "%s, %d\n", k[j], v[j]);
-   }
+   }*/
 
    fclose(outfile);
    fclose(fp);

@@ -6,7 +6,7 @@ all: serial
 serial: cpu_version.cpp
 	nvcc $(SERFLAGS) $^
 
-dist: dist_version.cpp
+dist: dist_version.cu
 	nvcc $(DISTFLAGS) $^ 
 
 clean: 
