@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 //C++ libraries
 #include <map>
@@ -31,16 +34,24 @@ bool IsAlpha(char *toCheck) {
    return flag;
 }
 
-map<string, int> countWords(FILE *fp, int fileSize) {
+map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
    map<string, int> words;
-   char *fileData = (char *)malloc(fileSize);
+   
    string temp;
+
+   
+   int size = fileSize/commSize;
+
+   lseek(fd, 0, size * commRank);
+
+   fileSize = commRank == commSize ? fileSize : size;
+   char *fileData = (char *)malloc(fileSize);
    if (!fileData) {
       perror("Malloc");
       exit(1);
    }
-   
-   fread(fileData, sizeof(char),fileSize, fp);
+   read(fd, fileData, fileSize);
+
    char *pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
    while (pch) {
       if (IsAlpha(pch)) {
@@ -52,29 +63,93 @@ map<string, int> countWords(FILE *fp, int fileSize) {
    return words;
 }
 
+void mpiPrint(int commRank, map<string, int> words) {
+   char t = '0' + commRank;
+   string temp((const char *)&t) ;
+   string mpiOut = "out" + temp + ".hist";
+
+   FILE *outfile = fopen(mpiOut.c_str(), "w");
+   if (!outfile) {
+      perror("MPI fopen");
+      exit(1);
+   }
+
+   for (map<string, int>::iterator it=words.begin(); it!=words.end(); it++){
+      fprintf(outfile,"%s %d\n", it->first.c_str(), it->second);
+   }
+
+   fclose(outfile);
+}
+
+map<string, int> combineMaps(map<string, int> words,int commSize) {
+   char buf[100];
+   int count = 0;
+   char t;
+   FILE * in;
+   string s;
+
+   for(int i = 1; i < commSize; i++) {
+      t = '0' + i;
+      string temp((const char *)&t) ;
+      s = "out" + temp + ".hist";
+      in = fopen(s.c_str(), "r");
+      while(fscanf(in, "%s %d", buf, &count)) {
+         string ts(buf);
+         words[ts] += count;
+      }
+      fclose(in);
+    }
+
+   return words;
+}
 
 int main(int argc, char **argv) {
    map<string, int> words;
+   int commSize, commRank;
 
    if (argc < 3) {
       fprintf(stderr, "Usage: %s <infile> <outfile.hist>\n", *argv);
       exit(1);
    }
    
-   FILE *fp = fopen(argv[1],"r");
-   fseek(fp, 0, SEEK_END);
-   int fileSize = ftell(fp);
-   rewind(fp);
-
-   words = countWords(fp, fileSize); 
-   FILE *outfile = fopen(argv[2], "w");
-   if (!outfile) {
-      perror("fopen");
+   MPI_Init(&argc, &argv);
+    
+   MPI_Comm_size(MPI_COMM_WORLD, &commSize);
+   MPI_Comm_rank(MPI_COMM_WORLD, &commRank);
+   
+   int fd = open(argv[1], O_RDONLY);
+   if (0 > fd) {
+      perror("fd");
       exit(1);
    }
-   
-   sortAndPrintMap(words, outfile);
+   int fileSize = lseek(fd, 0, SEEK_END);
 
-   fclose(outfile);
-   fclose(fp);
+  // lseek(fd, 0, SEEK_SET);
+
+   words = countWords(fd, fileSize, commRank, commSize);
+
+   if (commRank) {
+      mpiPrint(commRank, words);
+   }
+
+   MPI_Barrier(MPI_COMM_WORLD);
+
+   if (!commRank) {
+      words = combineMaps(words, commSize);
+      FILE *outfile = fopen(argv[2], "w");
+      if (!outfile) {
+         perror("fopen");
+         exit(1);
+      }
+
+      sortAndPrintMap(words, outfile);
+      fclose(outfile);
+   }
+   
+
+
+
+   MPI_Finalize();
+
+   close(fd);
 }
