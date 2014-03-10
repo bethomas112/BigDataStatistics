@@ -95,7 +95,7 @@ map<string, int> combineMaps(map<string, int> words,int commSize) {
       sprintf(t, "out%d.hist", i);
       string temp(t);
       in = fopen(temp.c_str(), "r");
-      while(fscanf(in, "%s %d", buf, &count)) {
+      while(fscanf(in, "%s %d", buf, &count) != EOF) {
          string ts(buf);
          words[ts] += count;
       }
@@ -131,11 +131,15 @@ int main(int argc, char **argv) {
    cout << "After Countwords, CommRank: " << commRank << "\n";
 
    if (commRank) {
+      cout << "Entering mpiPrint, CommRank: " << commRank << "\n";
       mpiPrint(commRank, words);
+      cout << "Finished mpiPrint, CommRank: " << commRank << "\n";
    }
 
    MPI_Barrier(MPI_COMM_WORLD);
-
+   
+   cout << "Passed Barrier, CommRank: " << commRank << "\n";
+   
    if (!commRank) {
       words = combineMaps(words, commSize);
       FILE *outfile = fopen(argv[2], "w");
