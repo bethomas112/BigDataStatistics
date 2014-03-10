@@ -1,4 +1,5 @@
 //C libraries
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,14 +38,11 @@ bool IsAlpha(char *toCheck) {
 map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
    map<string, int> words;
    
-   string temp;
-
-   
    int size = fileSize/commSize;
 
-   lseek(fd, 0, size * commRank);
+   lseek(fd, size * commRank, SEEK_SET);
 
-   fileSize = commRank == commSize ? fileSize : size;
+   fileSize = commRank == commSize ? size + commSize : size;
    char *fileData = (char *)malloc(fileSize);
    if (!fileData) {
       perror("Malloc");
@@ -64,9 +62,13 @@ map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
 }
 
 void mpiPrint(int commRank, map<string, int> words) {
-   char t = '0' + commRank;
-   string temp((const char *)&t) ;
-   string mpiOut = "out" + temp + ".hist";
+   char t[15];
+
+   sprintf(t, "out%d.hist", commRank);
+   string mpiOut(t);
+   
+
+   printf("%s\n", mpiOut.c_str());
 
    FILE *outfile = fopen(mpiOut.c_str(), "w");
    if (!outfile) {
@@ -83,16 +85,15 @@ void mpiPrint(int commRank, map<string, int> words) {
 
 map<string, int> combineMaps(map<string, int> words,int commSize) {
    char buf[100];
+   char t[15];
    int count = 0;
-   char t;
    FILE * in;
    string s;
 
    for(int i = 1; i < commSize; i++) {
-      t = '0' + i;
-      string temp((const char *)&t) ;
-      s = "out" + temp + ".hist";
-      in = fopen(s.c_str(), "r");
+      sprintf(t, "out%d.hist", i);
+      string temp(t);
+      in = fopen(temp.c_str(), "r");
       while(fscanf(in, "%s %d", buf, &count)) {
          string ts(buf);
          words[ts] += count;
