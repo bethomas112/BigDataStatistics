@@ -1,33 +1,21 @@
-//MPI
+//C libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-//c++ includes
-#include <thrust/device_vector.h>
-#include <thrust/tabulate.h>
-#include <thrust/random.h>
-#include <thrust/transform.h>
-#include <thrust/transform_scan.h>
-#include <thrust/sort.h>
-#include <thrust/reduce.h>
-#include <thrust/binary_search.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <cmath>
+//C++ libraries
 #include <map>
 #include <string>
 #include <iostream>
 #include <vector>
 
-//#include <mpi.h>
+//Mpi
+#include <mpi.h>
+
+#include "dist_kernel.h"
 
 using namespace std;
 
-class KeyValue {
-public:
-   const char *key;
-   unsigned value;
-};
 
 /* Returns true if string is all alphabetical*/
 bool IsAlpha(char *toCheck) {
@@ -84,28 +72,8 @@ int main(int argc, char **argv) {
       perror("fopen");
       exit(1);
    }
-   thrust::device_vector<const char *> d_keys;
-   thrust::device_vector<int> d_values;
-  
-   for (map<string, int>::iterator it = words.begin(); it!=words.end(); 
-    it++){
-      d_keys.push_back(it->first.c_str());
-      d_values.push_back(it->second);
-   }
    
-   thrust::host_vector<const char *> keys;
-   thrust::host_vector<int> values;
-   
-   thrust::sort_by_key(d_values.begin(), d_values.end(), d_keys.begin(), 
-    thrust::greater<int>());
-
-   keys = d_keys;
-   values = d_values;
-   thrust::host_vector<int>::iterator vit = values.begin();
-   for (thrust::host_vector<const char *>::iterator it = keys.begin();
-    it != keys.end(); it++, vit++) {
-      fprintf(outfile, "%s, %d\n", *it, *vit);
-   }
+   sortAndPrintMap(words, outfile);
 
    fclose(outfile);
    fclose(fp);
