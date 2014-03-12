@@ -35,29 +35,34 @@ bool IsAlpha(char *toCheck) {
    return flag;
 }
 
-map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
+map<string, int> countWords(int fd, unsigned fileSize, int commRank, int commSize) {
    map<string, int> words; 
    char *pch;
-   int size = fileSize/commSize;
+   unsigned size = fileSize/commSize;
    char buf;
-   int start = size * commRank;
-   int end = size * (commRank + 1);
+   unsigned start = size * commRank;
+   unsigned end = size * (commRank + 1);
 
    lseek(fd, start, SEEK_SET);
 
-   if (!commRank) {
+   if (commRank) {
       read(fd, &buf, 1);
+      //printf("---------------------%c %i\n", buf, commRank);
       while (! strchr(" ,{}\"/=_()-<>`\'!.?:;\n ", buf)) {
+         if (start == size * (commRank)) {
+            start++;
+         }
          start++;
          read(fd, &buf, 1);
       }
    }
-
-   lseek(fd, size * (commRank + 1), SEEK_SET);
+   lseek(fd, end, SEEK_SET);
 
    if (commRank != commSize - 1) {
       read(fd, &buf, 1);
-      while (! strchr(" ,{}\"/=_()-<>`\'!.?:;\n ", buf)) {
+      while (!strchr(" ,{}\"/=_()-<>`\'!.?:;\n ", buf)) {
+         if (end == size * (commRank + 1))
+            end++;
          end++;
          read(fd, &buf, 1);
       } 
@@ -109,8 +114,8 @@ void mpiPrint(int commRank, map<string, int> words) {
 }
 
 map<string, int> combineMaps(map<string, int> words,int commSize) {
-   char buf[100];
-   char t[15];
+   char buf[1000];
+   char t[150];
    int count = 0;
    FILE * in;
    string s;
@@ -148,7 +153,7 @@ int main(int argc, char **argv) {
       perror("fd");
       exit(1);
    }
-   int fileSize = lseek(fd, 0, SEEK_END);
+   unsigned fileSize = lseek(fd, 0, SEEK_END);
 
    cout << "Before CountWords, CommRank: " << commRank << "\n";
    words = countWords(fd, fileSize, commRank, commSize);
@@ -166,6 +171,7 @@ int main(int argc, char **argv) {
    
    if (!commRank) {
       words = combineMaps(words, commSize);
+   printf("After combine\n");
       FILE *outfile = fopen(argv[2], "w");
       if (!outfile) {
          perror("fopen");
