@@ -38,18 +38,42 @@ bool IsAlpha(char *toCheck) {
 map<string, int> countWords(int fd, int fileSize, int commRank, int commSize) {
    map<string, int> words; 
    char *pch;
-   int size = fileSize/commSize + 4;
+   int size = fileSize/commSize;
+   char buf;
+   int start = size * commRank;
+   int end = size * (commRank + 1);
 
-   lseek(fd, size * commRank, SEEK_SET);
+   lseek(fd, start, SEEK_SET);
+
+   if (!commRank) {
+      read(fd, &buf, 1);
+      while (! strchr(" ,{}\"/=_()-<>`\'!.?:;\n ", buf)) {
+         start++;
+         read(fd, &buf, 1);
+      }
+   }
+
+   lseek(fd, size * (commRank + 1), SEEK_SET);
+
+   if (commRank != commSize - 1) {
+      read(fd, &buf, 1);
+      while (! strchr(" ,{}\"/=_()-<>`\'!.?:;\n ", buf)) {
+         end++;
+         read(fd, &buf, 1);
+      } 
+   }
+   else 
+      end = fileSize;
 
    //fileSize = commRank == commSize - 1 ? size + commSize : size;
-   char *fileData = (char *)malloc(size);
+   lseek(fd, start, SEEK_SET);
+   char *fileData = (char *)malloc(sizeof(char) * (end - start + commSize));
    if (!fileData) {
       perror("Malloc");
       exit(1);
    }
    
-   read(fd, fileData, size);
+   read(fd, fileData, end - start);
 
    pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
    while (pch) {

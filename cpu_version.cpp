@@ -46,8 +46,8 @@ bool IsAlpha(char *toCheck) {
 map<string, int> countWords(FILE *fp, int fileSize) {
    map<string, int> words;
    char *fileData = (char *)malloc(fileSize);
-   char *last , *secondLast;
-   long t =0;
+   //char *last , *secondLast;
+   //long t =0;
    string temp;
    if (!fileData) {
       perror("Malloc");
@@ -56,7 +56,7 @@ map<string, int> countWords(FILE *fp, int fileSize) {
    
    fread(fileData, sizeof(char),fileSize, fp);
    char *pch = strtok(fileData, " ,{}\"/=_()-<>`\'!.?:;\n ");
-   last = pch;
+   //last = pch;
    while (pch) {
       if (IsAlpha(pch)) {
          words[string(pch)]++;
