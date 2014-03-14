@@ -4,7 +4,7 @@ DISTFLAGS=-O2 -o dist_version
 DISTCU=dist_kernel.o
 MPI_LIB= -L/usr/local/cuda/lib64 -lcudart
 
-all: serial
+all: serial dist
 
 serial: cpu_version.cpp
 	nvcc $(SERFLAGS) $^
