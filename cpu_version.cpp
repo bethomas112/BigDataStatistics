@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
    FILE *fp = fopen(argv[1],"r");
    fseek(fp, 0, SEEK_END);
    int fileSize = ftell(fp);
+
    rewind(fp);
 
    words = countWords(fp, fileSize); 

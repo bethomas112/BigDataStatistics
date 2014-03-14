@@ -98,7 +98,7 @@ void mpiPrint(int commRank, map<string, int> words) {
    string mpiOut(t);
    
 
-   printf("%s\n", mpiOut.c_str());
+   //printf("%s\n", mpiOut.c_str());
 
    FILE *outfile = fopen(mpiOut.c_str(), "w");
    if (!outfile) {
@@ -114,7 +114,7 @@ void mpiPrint(int commRank, map<string, int> words) {
 }
 
 map<string, int> combineMaps(map<string, int> words,int commSize) {
-   char buf[1000];
+   char buf[50000];
    char t[150];
    int count = 0;
    FILE * in;
@@ -124,10 +124,12 @@ map<string, int> combineMaps(map<string, int> words,int commSize) {
       sprintf(t, "out%d.hist", i);
       string temp(t);
       in = fopen(temp.c_str(), "r");
+      //cout << "Combining map: " << i << "\n";
       while(fscanf(in, "%s %d", buf, &count) != EOF) {
          string ts(buf);
          words[ts] += count;
       }
+      //cout << "Finished combining map: " << i << "\n"; 
       fclose(in);
     }
 
@@ -155,23 +157,22 @@ int main(int argc, char **argv) {
    }
    unsigned fileSize = lseek(fd, 0, SEEK_END);
 
-   cout << "Before CountWords, CommRank: " << commRank << "\n";
+   //cout << "Before CountWords, CommRank: " << commRank << "\n";
    words = countWords(fd, fileSize, commRank, commSize);
-   cout << "After Countwords, CommRank: " << commRank << "\n";
+   //cout << "After Countwords, CommRank: " << commRank << "\n";
 
    if (commRank) {
-      cout << "Entering mpiPrint, CommRank: " << commRank << "\n";
+      //cout << "Entering mpiPrint, CommRank: " << commRank << "\n";
       mpiPrint(commRank, words);
-      cout << "Finished mpiPrint, CommRank: " << commRank << "\n";
+      //cout << "Finished mpiPrint, CommRank: " << commRank << "\n";
    }
 
    MPI_Barrier(MPI_COMM_WORLD);
    
-   cout << "Passed Barrier, CommRank: " << commRank << "\n";
+   //cout << "Passed Barrier, CommRank: " << commRank << "\n";
    
    if (!commRank) {
       words = combineMaps(words, commSize);
-   printf("After combine\n");
       FILE *outfile = fopen(argv[2], "w");
       if (!outfile) {
          perror("fopen");

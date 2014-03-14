@@ -1,0 +1,1 @@
+mpirun -mca btl_tcp_if_include eth0 -n 12 --prefix /usr/lib64/openmpi --host 255x10,255x05,255x11,255x07,255x12,255x14,255x19,255x08,255x16,255x17,255x19,255x03 dist_version TestFiles/books.txt dis_out.hist
